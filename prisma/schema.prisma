@@ -1,0 +1,101 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["patients", "traces"]
+}
+
+model Patient {
+  patient_id Int    @id
+  name       String
+  surname    String
+  ssn        String @unique
+  phoneNum   String
+  diagnosis  String
+  state      String
+  sex        Sex
+
+  @@unique([name, surname])
+  @@schema("patients")
+}
+
+model TraceRecord {
+  traceID    String         @id
+  pathName   String         //Name of this path given by request record in processing.
+  SpanRecord SpanRecord[]
+  ReqRec     RequestRecord? //This should actually be required. Darn it, Prisma!
+
+  @@schema("traces")
+}
+
+//Denotes spans of service telemetry; name, runtime, errors...
+//Also record HTTP information where applicable.
+model SpanRecord {
+  ownerTraceID String //Which path does this belong to?
+  spanID       String  @id
+  spanName     String //Reserved for future work; name of span.
+  serviceName  String //Name of service as derived from unique port-name combo.
+  spanDuration Int //Time from start to end of span, in ms.
+  spanError    String? //Reserved.
+  parentID     String? //Most likely unwanted.
+  methodHTTP   String //GET, POST, DELETE...
+  statusHTTP   Int //200, 404, 500...
+  targetHTTP   String //HTTP endpoint, reserved for future work.
+  bodyLengthHTTP  Int //Uncompressed body size.
+
+  ownerTrace TraceRecord @relation(fields: [ownerTraceID], references: [traceID], onDelete: Cascade)
+
+  @@schema("traces")
+}
+
+//Analysis of all SpanRecords for use with TOPSIS.
+model ServiceAnalysisRecord {
+  name         String                        @id
+  recordCount  Int
+  time_avg     Decimal  //time taken to complete requests
+  time_StDev   Decimal
+  body_avg     Decimal  //body size of responses
+  body_StDev   Decimal 
+  fail_ratio   Decimal  //% requests who come back with 5XX; can be 0.
+
+  @@schema("traces")
+}
+
+model PathAnalysisRecord {
+  name             String   @id
+  recordCount      Int      //number of records for this kind of path
+  riskScore        Decimal  //risk score recieved; sum of topsis scores multiplied by the path's risk.
+  servicesUsed     String[] //List of services used. 
+  servicesCount    Int      //Length of the above list for easy reference.
+  @@schema("traces") 
+}
+
+//Records the unique request (and response) 
+model RequestRecord {
+  ownerTraceID String @id //Which path does this belong to?
+  spanID       String @unique
+  headers      Json?  //Headers involved. An empty array is possible.
+  body         Json?  //Body content. GET requests should have none.
+  risk         Int    @default(0) //Risk score of header, body arguments; higher = worse.
+
+  ownerPath   TraceRecord @relation(fields: [ownerTraceID], references: [traceID], onDelete: Cascade)
+  @@schema("traces")
+}
+
+//Save the TOPSIS scores of services here.
+model serviceTopsisScores {
+  name           String @id
+  score          Float
+  @@schema("traces")
+}
+
+enum Sex {
+  M
+  F
+
+  @@schema("patients")
+}

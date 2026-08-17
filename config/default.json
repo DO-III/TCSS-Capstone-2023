@@ -1,0 +1,32 @@
+{
+    "requestFlag" : "REQUEST_FLAG",
+    "pathNameFlag" : "pathName",
+    "host" : "localhost",
+    "ports" : {
+        "frontend" : 5000,
+        "micros" : {
+            "filters"  : {
+                "name" : 6000,
+                "ssn"  : 6001,
+                "pNum" : 6002,
+                "sex"  : 6003,
+                "diag" : 6004,
+                "stCod": 6005
+            },
+            "services" : {
+                "addPatient" : 4000,
+                "getPatientByName" : 4001,
+                "getPatientBySSN" : 4003,
+                "delPatientByName" : 4002,
+                "delPatientBySSN" : 4004
+            },
+            "updaters" : {
+                "updSSN"  : 7003,
+                "updPNum" : 7004,
+                "updSex"  : 7005,
+                "updDiag" : 7006,
+                "updStCod": 7007
+            }
+        }
+    }
+}

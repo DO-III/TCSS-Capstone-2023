@@ -1,0 +1,21 @@
+receivers:
+  zipkin:
+exporters:
+  otlp:
+    endpoint: "localhost:9201"
+    tls:
+      insecure: true
+    sending_queue:
+      queue_size: 1000000
+    timeout: 10s
+processors:
+  batch:
+    send_batch_size: 4000
+    send_batch_max_size: 4000
+    timeout: 10s
+service:
+  pipelines:
+    traces:
+      receivers: [zipkin]
+      exporters: [otlp]
+      processors: [batch]
